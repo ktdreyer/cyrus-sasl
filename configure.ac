@@ -1283,6 +1283,10 @@ AC_HEADER_STDC
 AC_HEADER_DIRENT
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(crypt.h des.h dlfcn.h fcntl.h limits.h malloc.h paths.h strings.h sys/file.h sys/time.h syslog.h unistd.h inttypes.h sys/uio.h sys/param.h sysexits.h stdarg.h varargs.h krb5.h)
+AC_CHECK_TYPES([long long, int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t, uint64_t],,,[
+#ifdef HAVE_INTTYPES_H
+#include <inttypes.h>
+#endif])
 
 IPv6_CHECK_SS_FAMILY()
 IPv6_CHECK_SA_LEN()

@@ -82,11 +82,18 @@
  */
 
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+
+#ifdef HAVE_INTTYPES_H
+#include <inttypes.h>
+#endif
 
 
 static void
@@ -122,6 +129,18 @@ my_strupr(char *s)
 static void
 try_signed(FILE *f, int len)
 {
+#ifdef HAVE_INT8_T
+    BITSIZE(int8_t);
+#endif
+#ifdef HAVE_INT16_T
+    BITSIZE(int16_t);
+#endif
+#ifdef HAVE_INT32_T
+    BITSIZE(int32_t);
+#endif
+#ifdef HAVE_INT64_T
+    BITSIZE(int64_t);
+#endif
     BITSIZE(signed char);
     BITSIZE(short);
     BITSIZE(int);
@@ -135,6 +154,18 @@ try_signed(FILE *f, int len)
 static void
 try_unsigned(FILE *f, int len)
 {
+#ifdef HAVE_UINT8_T
+    BITSIZE(uint8_t);
+#endif
+#ifdef HAVE_UINT16_T
+    BITSIZE(uint16_t);
+#endif
+#ifdef HAVE_UINT32_T
+    BITSIZE(uint32_t);
+#endif
+#ifdef HAVE_UINT64_T
+    BITSIZE(uint64_t);
+#endif
     BITSIZE(unsigned char);
     BITSIZE(unsigned short);
     BITSIZE(unsigned int);
@@ -165,6 +196,11 @@ static int print_pre(FILE *f)
 	  "/* POINTER defines a generic pointer type */\n"
 	  "typedef unsigned char *POINTER;\n"
 	  "\n"
+#ifdef HAVE_INTTYPES_H
+	  "/* We try to define integer types for our use */\n"
+	  "#include <inttypes.h>\n"
+	  "\n"
+#endif
 	  );
   return 1;
 }
@@ -214,31 +250,15 @@ int main(int argc, char **argv)
 
   print_pre(f);
 
-#ifndef HAVE_INT8_T
     try_signed (f, 8);
-#endif /* HAVE_INT8_T */
-#ifndef HAVE_INT16_T
     try_signed (f, 16);
-#endif /* HAVE_INT16_T */
-#ifndef HAVE_INT32_T
     try_signed (f, 32);
-#endif /* HAVE_INT32_T */
-#ifndef HAVE_INT64_T
     try_signed (f, 64);
-#endif /* HAVE_INT64_T */
 
-#ifndef HAVE_U_INT8_T
     try_unsigned (f, 8);
-#endif /* HAVE_INT8_T */
-#ifndef HAVE_U_INT16_T
     try_unsigned (f, 16);
-#endif /* HAVE_U_INT16_T */
-#ifndef HAVE_U_INT32_T
     try_unsigned (f, 32);
-#endif /* HAVE_U_INT32_T */
-#ifndef HAVE_U_INT64_T
     try_unsigned (f, 64);
-#endif /* HAVE_U_INT64_T */
 
     print_post(f);
   
