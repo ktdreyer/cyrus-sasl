@@ -1095,6 +1095,9 @@ AC_SUBST(SASL_STATIC_SRCS)
 AC_SUBST(SASL_STATIC_OBJS)
 AC_SUBST(SASL_STATIC_LIBS)
 
+CYRUS_BERKELEY_DB_STATIC_LIB()
+AC_SUBST(BDB_STATIC_LIBADD)
+
 AC_ARG_WITH(plugindir, [  --with-plugindir=DIR    set the directory where plugins will
                           be found [[LIBDIR/sasl2]] ],
   plugindir=$withval,

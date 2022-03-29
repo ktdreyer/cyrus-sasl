@@ -286,3 +286,10 @@ AC_DEFUN([CYRUS_BERKELEY_DB_CHK],
 
 	CPPFLAGS=$cmu_save_CPPFLAGS
 ])
+
+AC_DEFUN([CYRUS_BERKELEY_DB_STATIC_LIB],
+[
+BDB_STATIC_LIBADD="/dev/null -lpthread"
+AC_CHECK_FILE([/usr/lib64/libdb-5.3.a],[BDB_STATIC_LIBADD="/usr/lib64/libdb-5.3.a -lpthread "],[])
+AC_CHECK_FILE([/usr/lib/libdb-5.3.a],[BDB_STATIC_LIBADD="/usr/lib/libdb-5.3.a -lpthread"],[])
+])

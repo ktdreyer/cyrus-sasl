@@ -46,14 +46,14 @@ all_sasl_libs = ../lib/libsasl2.la $(SASL_DB_LIB) $(LIB_SOCKET)
 all_sasl_static_libs = ../lib/.libs/libsasl2.a $(SASL_DB_LIB) $(LIB_SOCKET) $(GSSAPIBASE_LIBS) $(GSSAPI_LIBS) $(SASL_KRB_LIB) $(LIB_DES) $(PLAIN_LIBS) $(SRP_LIBS) $(LIB_MYSQL) $(LIB_PGSQL) $(LIB_SQLITE)
 
 sbin_PROGRAMS = @SASL_DB_UTILS@ @SMTPTEST_PROGRAM@ pluginviewer
-EXTRA_PROGRAMS = saslpasswd2 sasldblistusers2 testsuite testsuitestatic smtptest pluginviewer
+EXTRA_PROGRAMS = saslpasswd2 sasldblistusers2 testsuite testsuitestatic smtptest pluginviewer cyrusbdb2current
 
 noinst_PROGRAMS = dbconverter-2
 
 if NO_SASL_DB_MANS
 man_MANS = 
 else
-man_MANS = saslpasswd2.8 sasldblistusers2.8 pluginviewer.8
+man_MANS = saslpasswd2.8 sasldblistusers2.8 pluginviewer.8 cyrusbdb2current.8
 endif
 
 saslpasswd2_LDADD = ../sasldb/libsasldb.la $(all_sasl_libs)
@@ -63,6 +63,7 @@ sasldblistusers2_SOURCES = sasldblistusers.c
 dbconverter_2_LDADD = ../sasldb/libsasldb.la $(all_sasl_libs)
 pluginviewer_LDADD = $(all_sasl_libs)
 pluginviewer_SOURCES = pluginviewer.c
+cyrusbdb2current_LDADD = ../sasldb/libsasldb.la @BDB_STATIC_LIBADD@ $(all_sasl_libs)
 
 testsuite_LDADD = $(all_sasl_libs) @DMALLOC_LIBS@
 

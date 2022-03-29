@@ -67,6 +67,7 @@ int _sasldb_getdata(const sasl_utils_t *utils,
   void *cntxt;
   sasl_getopt_t *getopt;
   const char *path = SASL_DB_PATH;
+  int fetch_errno = 0;
 
   if (!utils) return SASL_BADPARAM;
   if (!authid || !propName || !realm || !out || !max_out) {
@@ -99,6 +100,9 @@ int _sasldb_getdata(const sasl_utils_t *utils,
   }
   db = gdbm_open((char *)path, 0, GDBM_READER, S_IRUSR | S_IWUSR, NULL);
   if (! db) {
+      utils->log(conn, SASL_LOG_ERR,
+		 "SASL error opening password file. "
+		 "Have you performed the migration from db2 using cyrusbdb2current?\n");
       utils->seterror(cntxt, 0, "Could not open %s: gdbm_errno=%d",
 		      path, gdbm_errno);
       result = SASL_FAIL;
@@ -107,9 +111,10 @@ int _sasldb_getdata(const sasl_utils_t *utils,
   gkey.dptr = key;
   gkey.dsize = key_len;
   gvalue = gdbm_fetch(db, gkey);
+  fetch_errno = gdbm_errno;
   gdbm_close(db);
   if (! gvalue.dptr) {
-      if (gdbm_errno == GDBM_ITEM_NOT_FOUND) {
+      if (fetch_errno == GDBM_ITEM_NOT_FOUND) {
           utils->seterror(conn, SASL_NOLOG,
 			  "user: %s@%s property: %s not found in %s",
 			  authid, realm, propName, path);
@@ -186,7 +191,8 @@ int _sasldb_putdata(const sasl_utils_t *utils,
   if (! db) {
       utils->log(conn, SASL_LOG_ERR,
 		 "SASL error opening password file. "
-		 "Do you have write permissions?\n");
+		 "Do you have write permissions?\n"
+		 "Have you performed the migration from db2 using cyrusbdb2current?\n");
       utils->seterror(conn, 0, "Could not open %s for write: gdbm_errno=%d",
                      path, gdbm_errno);
       result = SASL_FAIL;
@@ -298,6 +304,9 @@ sasldb_handle _sasldb_getkeyhandle(const sasl_utils_t *utils,
     db = gdbm_open((char *)path, 0, GDBM_READER, S_IRUSR | S_IWUSR, NULL);
 
     if(!db) {
+        utils->log(conn, SASL_LOG_ERR,
+		 "SASL error opening password file. "
+		 "Have you performed the migration from db2 using cyrusbdb2current?\n");
         utils->seterror(conn, 0, "Could not open %s: gdbm_errno=%d",
 			 path, gdbm_errno);
 	return NULL;
