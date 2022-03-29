@@ -107,7 +107,6 @@ my_strupr(char *s)
     }	
 }
 
-
 #define BITSIZE(TYPE)						\
 {								\
     int b = 0; TYPE x = 1, zero = 0; char *pre = "U";		\
@@ -129,6 +128,8 @@ my_strupr(char *s)
 static void
 try_signed(FILE *f, int len)
 {
+/* Local macros for not-installed program. No coverity/compiler issues! */
+#pragma GCC diagnostic ignored "-Wformat-overflow"
 #ifdef HAVE_INT8_T
     BITSIZE(int8_t);
 #endif
@@ -149,6 +150,7 @@ try_signed(FILE *f, int len)
     BITSIZE(long long);
 #endif
     fprintf(f, "/* There is no %d bit type */\n", len);
+#pragma GCC pop
 }
 
 static void

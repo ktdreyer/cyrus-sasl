@@ -337,9 +337,9 @@ static int lak_config_read(
          EMPTY(conf->group_search_base) )
         strlcpy(conf->group_search_base, conf->search_base, LAK_DN_LEN);
         
-	fclose(infile);
+    fclose(infile);
 
-	return LAK_OK;
+    return LAK_OK;
 }
 
 static int lak_config_int(

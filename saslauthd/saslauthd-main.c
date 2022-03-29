@@ -833,7 +833,8 @@ void detach_tty() {
     }
     
     logger(L_INFO, L_FUNC, "master pid is: %lu", (unsigned long)master_pid);
-    
+    /* null_fd expected to be more than 2, so it is closed after dups, no leaks occur */
+    /* coverity[leaked_handle : FALSE]*/
     return;
 }
 
