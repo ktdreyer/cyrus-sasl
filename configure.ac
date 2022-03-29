@@ -1575,7 +1575,8 @@ java/javax/Makefile
 java/javax/security/Makefile
 java/javax/security/auth/Makefile
 java/javax/security/auth/callback/Makefile
-pwcheck/Makefile)
+pwcheck/Makefile
+tests/Makefile)
 
 AC_MSG_NOTICE([
 

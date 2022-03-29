@@ -70,7 +70,7 @@ else
 INSTALLOSX = 
 endif
 
-SUBDIRS=include sasldb common lib plugins utils $(PWC) $(SAM) $(JAV) $(SAD)
+SUBDIRS=include sasldb common lib plugins utils $(PWC) $(SAM) $(JAV) $(SAD) tests
 EXTRA_DIST=config doc docsrc win32 mac dlcompat-20010505 NTMakefile \
     INSTALL.TXT libsasl2.pc.in
 
