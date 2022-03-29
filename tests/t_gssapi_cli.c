@@ -16,6 +16,8 @@
 #include <saslplug.h>
 #include <saslutil.h>
 
+const char *testpass = NULL;
+
 static int setup_socket(void)
 {
     struct sockaddr_in addr;
@@ -34,9 +36,60 @@ static int setup_socket(void)
     return sock;
 }
 
+static int get_user(void *context __attribute__((unused)),
+                  int id,
+                  const char **result,
+                  unsigned *len)
+{
+    const char *testuser = "test@host.realm.test";
+
+    if (! result)
+        return SASL_BADPARAM;
+
+    switch (id) {
+    case SASL_CB_USER:
+    case SASL_CB_AUTHNAME:
+        *result = testuser;
+        break;
+    default:
+        return SASL_BADPARAM;
+    }
+
+    if (len) *len = strlen(*result);
+
+    return SASL_OK;
+}
+
+static int get_pass(sasl_conn_t *conn __attribute__((unused)),
+          void *context __attribute__((unused)),
+          int id,
+          sasl_secret_t **psecret)
+{
+    size_t len;
+    static sasl_secret_t *x;
+
+    /* paranoia check */
+    if (! conn || ! psecret || id != SASL_CB_PASS)
+        return SASL_BADPARAM;
+
+    len = strlen(testpass);
+
+    x = (sasl_secret_t *) realloc(x, sizeof(sasl_secret_t) + len);
+
+    if (!x) {
+        return SASL_NOMEM;
+    }
+
+    x->len = len;
+    strcpy((char *)x->data, testpass);
+
+    *psecret = x;
+    return SASL_OK;
+}
+
 int main(int argc, char *argv[])
 {
-    sasl_callback_t callbacks[2] = {};
+    sasl_callback_t callbacks[4] = {};
     char buf[8192];
     const char *chosenmech;
     sasl_conn_t *conn;
@@ -49,8 +102,9 @@ int main(int argc, char *argv[])
     const char *sasl_mech = "GSSAPI";
     bool spnego = false;
     bool zeromaxssf = false;
+    bool plain = false;
 
-    while ((c = getopt(argc, argv, "c:zN")) != EOF) {
+    while ((c = getopt(argc, argv, "c:zNP:")) != EOF) {
         switch (c) {
         case 'c':
             parse_cb(&cb, cb_buf, 256, optarg);
@@ -60,6 +114,10 @@ int main(int argc, char *argv[])
             break;
         case 'N':
             spnego = true;
+            break;
+        case 'P':
+            plain = true;
+            testpass = optarg;
             break;
         default:
             break;
@@ -73,6 +131,12 @@ int main(int argc, char *argv[])
     callbacks[1].id = SASL_CB_LIST_END;
     callbacks[1].proc = NULL;
     callbacks[1].context = NULL;
+    callbacks[2].id = SASL_CB_LIST_END;
+    callbacks[2].proc = NULL;
+    callbacks[2].context = NULL;
+    callbacks[3].id = SASL_CB_LIST_END;
+    callbacks[3].proc = NULL;
+    callbacks[3].context = NULL;
 
     r = sasl_client_init(callbacks);
     if (r != SASL_OK) exit(-1);
@@ -91,6 +155,16 @@ int main(int argc, char *argv[])
         sasl_mech = "GSS-SPNEGO";
     }
 
+    if (plain) {
+        sasl_mech = "PLAIN";
+
+        callbacks[1].id = SASL_CB_AUTHNAME;
+        callbacks[1].proc = (sasl_callback_ft)&get_user;
+
+        callbacks[2].id = SASL_CB_PASS;
+        callbacks[2].proc = (sasl_callback_ft)&get_pass;
+    }
+
     if (zeromaxssf) {
         /* set all security properties to 0 including maxssf */
         sasl_security_properties_t secprops = { 0 };
@@ -99,9 +173,9 @@ int main(int argc, char *argv[])
 
     r = sasl_client_start(conn, sasl_mech, NULL, &data, &len, &chosenmech);
     if (r != SASL_OK && r != SASL_CONTINUE) {
-	saslerr(r, "starting SASL negotiation");
-	printf("\n%s\n", sasl_errdetail(conn));
-	exit(-1);
+        saslerr(r, "starting SASL negotiation");
+        printf("\n%s\n", sasl_errdetail(conn));
+        exit(-1);
     }
 
     sd = setup_socket();
@@ -111,11 +185,11 @@ int main(int argc, char *argv[])
         len = 8192;
         recv_string(sd, buf, &len, false);
 
-	r = sasl_client_step(conn, buf, len, NULL, &data, &len);
-	if (r != SASL_OK && r != SASL_CONTINUE) {
-	    saslerr(r, "performing SASL negotiation");
-	    printf("\n%s\n", sasl_errdetail(conn));
-	    exit(-1);
+        r = sasl_client_step(conn, buf, len, NULL, &data, &len);
+        if (r != SASL_OK && r != SASL_CONTINUE) {
+            saslerr(r, "performing SASL negotiation");
+            printf("\n%s\n", sasl_errdetail(conn));
+            exit(-1);
         }
     }
 

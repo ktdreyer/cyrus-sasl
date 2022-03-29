@@ -313,6 +313,99 @@ def gssapi_tests(testdir):
 
     return err
 
+def setup_plain(testdir):
+    """ Create sasldb file """
+    sasldbfile = os.path.join(testdir, 'testsasldb.db')
+
+    sasldbenv = {'SASL_PATH': os.path.join(testdir, '../../plugins/.libs'),
+                 'LD_LIBRARY_PATH' : os.path.join(testdir, '../../lib/.libs')}
+
+    passwdprog = os.path.join(testdir, '../../utils/saslpasswd2')
+
+    echo = subprocess.Popen(('echo', '1234567'), stdout=subprocess.PIPE)
+    subprocess.check_call([
+        passwdprog, "-f", sasldbfile, "-c", "test",
+        "-u", "host.realm.test", "-p"
+        ], stdin=echo.stdout, env=sasldbenv, timeout=5)
+
+    return (sasldbfile, sasldbenv)
+
+def plain_test(sasldbfile, sasldbenv):
+    try:
+        srv = subprocess.Popen(["../tests/t_gssapi_srv", "-P", sasldbfile],
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE, env=sasldbenv)
+        srv.stdout.readline() # Wait for srv to say it is ready
+        cli = subprocess.Popen(["../tests/t_gssapi_cli", "-P", "1234567"],
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE, env=sasldbenv)
+        try:
+            cli.wait(timeout=5)
+            srv.wait(timeout=5)
+        except Exception as e:
+            print("Failed on {}".format(e));
+            cli.kill()
+            srv.kill()
+        if cli.returncode != 0 or srv.returncode != 0:
+            raise Exception("CLI ({}): {} --> SRV ({}): {}".format(
+                cli.returncode, cli.stderr.read().decode('utf-8'),
+                srv.returncode, srv.stderr.read().decode('utf-8')))
+    except Exception as e:
+        print("FAIL: {}".format(e))
+        return 1
+
+    print("PASS: PLAIN CLI({}) SRV({})".format(
+        cli.stdout.read().decode('utf-8').strip(),
+        srv.stdout.read().decode('utf-8').strip()))
+    return 0
+
+def plain_mismatch_test(sasldbfile, sasldbenv):
+    result = "FAIL"
+    try:
+        srv = subprocess.Popen(["../tests/t_gssapi_srv", "-P", sasldbfile],
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE, env=sasldbenv)
+        srv.stdout.readline() # Wait for srv to say it is ready
+        bindings = base64.b64encode("CLI CBS".encode('utf-8'))
+        cli = subprocess.Popen(["../tests/t_gssapi_cli", "-P", "12345678"],
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE, env=sasldbenv)
+        try:
+            cli.wait(timeout=5)
+            srv.wait(timeout=5)
+        except Exception as e:
+            print("Failed on {}".format(e));
+            cli.kill()
+            srv.kill()
+        if cli.returncode != 0 or srv.returncode != 0:
+            cli_err = cli.stderr.read().decode('utf-8').strip()
+            srv_err = srv.stderr.read().decode('utf-8').strip()
+            if "authentication failure" in srv_err:
+                result = "PASS"
+            raise Exception("CLI ({}): {} --> SRV ({}): {}".format(
+                cli.returncode, cli_err, srv.returncode, srv_err))
+    except Exception as e:
+        print("{}: {}".format(result, e))
+        return 0
+
+    print("FAIL: This test should fail [CLI({}) SRV({})]".format(
+        cli.stdout.read().decode('utf-8').strip(),
+        srv.stdout.read().decode('utf-8').strip()))
+    return 1
+
+def plain_tests(testdir):
+    err = 0
+    sasldbfile, sasldbenv = setup_plain(testdir)
+    #print("DB file: {}, ENV: {}".format(sasldbfile, sasldbenv))
+    print('SASLDB PLAIN:')
+    print('    ', end='')
+    err += plain_test(sasldbfile, sasldbenv)
+
+    print('SASLDB PLAIN PASSWORD MISMATCH:')
+    print('    ', end='')
+    err += plain_mismatch_test(sasldbfile, sasldbenv)
+
+    return err
 
 if __name__ == "__main__":
 
@@ -329,5 +422,9 @@ if __name__ == "__main__":
 
     err = gssapi_tests(T)
     if err != 0:
-        print('{} test(s) FAILED'.format(err))
+        print('{} GSSAPI test(s) FAILED'.format(err))
+
+    err = plain_tests(T)
+    if err != 0:
+        print('{} PLAIN test(s) FAILED'.format(err))
         sys.exit(-1)
